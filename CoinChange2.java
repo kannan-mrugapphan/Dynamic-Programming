@@ -9,7 +9,7 @@ class Solution {
         //base
         for(int i = 0; i < m; i++)
         {
-            result[i][0] = 1; //for amount 0, 3 of ways to make 0 is 1 irrespective of coins[] - always dont choose the coin
+            result[i][0] = 1; //for amount 0, # of ways to make 0 is 1 irrespective of coins[] - always dont choose the coin
         }
         for(int i = 1; i < n; i++)
         {
