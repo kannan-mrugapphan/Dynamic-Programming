@@ -1,6 +1,7 @@
 // 10.
 // time - O(sLen * pLen)
 // space - O(sLen * pLen)
+//eg - pattern - c*a*b, string - aab
 class Solution {
     public boolean isMatch(String s, String p) {
         //edge
