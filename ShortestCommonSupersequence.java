@@ -78,5 +78,5 @@ class Solution {
 // longest palindrome subsequence = lcs(i/p string, reverse of i/p string)
 // min delete operations to make 2 strings equal(583) = length of str1 + length of str2 + 2*lcs(str1, str2) -> idea is to retain only chars in lcs ->
 // so delete all chars in both strings excepts ones in lcs -> eat, sea -> lcs = ea -> delete s in 2nd str and t in 1st str -> ans 2
-// min insertions needed to mae string a palindrome -> find longest palindrome plaindrome subsequence of i/p str -> all chars except ones in lps 
+// min insertions needed to mae string a palindrome(1312) -> find longest palindrome plaindrome subsequence of i/p str -> all chars except ones in lps 
 // -> must be inserted -> ans = length of str - lps
