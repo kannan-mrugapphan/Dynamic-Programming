@@ -2,6 +2,8 @@
 // time - O(n^2)
 // space - O(n)
 //approach - similar to LIS, sort nums[] and do LIS adding extra condition of divisiblity
+//consider the following subset {6, 3, 9}, if we decide to add 27 to this subset we have to check if 27 is divisible by all 6,3,9
+//if sorted the subset will be of form {3, 6, 9} and it is sufficient to check 27 with last element alone
 
 class Solution {
     public List<Integer> largestDivisibleSubset(int[] nums) {
