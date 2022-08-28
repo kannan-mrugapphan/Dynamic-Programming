@@ -44,14 +44,16 @@ class Solution {
         //result[0][i] = 0 for all i from 0 to N since max floors covered with 0 attempts is 0 -> no need to explictly set to 0 
         //result[i][0] = 0 for all i from 1 to K since max floors covered with 0 eggs is 0 -> no need to explictly set to 0 
         
+        //result[i][j] = max floors that can be covered with i attempts and j eggs
+        
         int attempts = 0; //start from 0 th row
         while(result[attempts][K] < N)
         {
             //as long as N floors aren't covered
-            attempts++; //increase attempts by 1
+            attempts++; //increase attempts by 1 i.e. drop an egg from any floor
             for(int egg = 1; egg <= K; egg++)
             {
-                //max floors covered is 1 + egg break case = egg doent break case
+                //floors covered is 1 (current floor from whihch egg is dropped) + egg break case (unsafe floors) + egg doesn't break case (safe floors)
                 //egg break case = attempts -1 (as 1 attempt is used) and egg - 1
                 //egg doesnt break case = attempts - 1 and egg
                 result[attempts][egg] = 1 + result[attempts - 1][egg - 1] + result[attempts - 1][egg];
