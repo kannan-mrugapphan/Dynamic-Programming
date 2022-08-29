@@ -1,37 +1,77 @@
 // 1043.
-// time - O(nK)
-// space - O(n)
-
 class Solution {
-    public int maxSumAfterPartitioning(int[] A, int K) {
-        //edge
-        if(A == null || A.length == 0)
+    public int maxSumAfterPartitioning(int[] arr, int k) {
+        //return findOptimalPartition(arr, k, 0, new Integer[arr.length]);
+        return findMaxSum(arr, k);
+    }
+    
+    //time - O(n^2) -> n possible states and for llop runs for n time for each state
+    //space - O(2n) cache + call stack size
+    private int findOptimalPartition(int[] nums, int k, int index, Integer[] cache) {
+        //base
+        if(index == nums.length)
         {
             return 0;
         }
-        int[] maxSum = new int[A.length]; //dp array
-        for(int i = 0; i < A.length; i++)
+        //check cache
+        if(cache[index] != null)
         {
-            //for k = 3, ith element can go as a single partition - in this case dp[i] = A[i] + dp[i - 1]
-            //ith element can be combined with i-1st element - dp[i] = 2*max(A[i], A[i - 1]) + dp[i - 2]
-            //ith element can be combined with i-1st element and i-2nd element - dp[i] = 3*max(A[i], A[i - 1], A[i - 2]) + dp[i - 3]
-            int maximum = 0;  //to track max as k grows from 1 to k
-            for(int j = 1; j <= K; j++)
+            return cache[index];
+        }
+        
+        //logic
+        int result = Integer.MIN_VALUE; //maximize result for nums starting from index
+        //if k = 3, (index), (index, index + 1), (index, index + 1, index + 2) are 3 possible partitions
+        //for each partition, find max element
+        int maxInCurrentPartition = Integer.MIN_VALUE;
+        for(int i = index; i < Math.min(nums.length, index + k); i++)
+        {
+            //partition = (index - i)
+            maxInCurrentPartition = Math.max(maxInCurrentPartition, nums[i]); //update max element
+            int currentPartitionSize = i - index + 1; //find size of current partiton
+            //recurse
+            int currentPartiton = (maxInCurrentPartition * currentPartitionSize) + findOptimalPartition(nums, k, i + 1, cache);
+            result = Math.max(result, currentPartiton);
+        }
+        
+        cache[index] = result;
+        return result;
+    }
+    
+    // time - O(n)
+    // space - O(n)
+    private int findMaxSum(int[] nums, int k) {
+        int[] result = new int[nums.length];
+        
+        for(int i = 0; i < nums.length; i++)
+        {
+            //if k = 3, (i), (i, i - 1), (i, i- 1, i- 2) are 3 partitons
+            int maxElement = Integer.MIN_VALUE;
+            for(int j = i; j > i - k; j--)
             {
-                if(i - j + 1 >= 0) //i-j+1st index in A gets the newly added element as k grows
+                if(j < 0)
                 {
-                    maximum = Math.max(maximum, A[i - j + 1]); //updating max
-                    if(i - j >= 0)
-                    {
-                        maxSum[i] = Math.max(maxSum[i], j * maximum + maxSum[i - j]);
-                    }
-                    else
-                    {
-                        maxSum[i] = Math.max(maxSum[i], j * maximum); //i-j is out of bounds
-                    }
+                    //invalid partiton
+                    continue;
+                }
+                
+                //current partiton (j - i)
+                maxElement = Math.max(maxElement, nums[j]);
+                int currentPartSize = (i - j + 1); //end - start + 1
+                //prev exisits
+                if(j - 1 >= 0)
+                {
+                    result[i] = Math.max(result[i],
+                                    (maxElement * currentPartSize) + result[j - 1]);
+                }
+                //prev doesn't esisits
+                else
+                {
+                    result[i] = Math.max(result[i], maxElement * currentPartSize);
                 }
             }
         }
-        return maxSum[A.length - 1];
+        
+        return result[nums.length - 1];
     }
 }
