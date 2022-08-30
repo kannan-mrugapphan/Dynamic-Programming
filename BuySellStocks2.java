@@ -241,3 +241,87 @@ class Solution {
         return result[0][1]; //return 0th day buy
     }
 }
+
+// 123.
+class Solution {
+    public int maxProfit(int[] prices) {
+       //return findMaxProfit(prices, 0, new Integer[prices.length][4], 0, 4);
+       return findMaxProfitTabulation(prices, 4);
+    }
+    
+    //trans 0 -> buy 1st stock, trans 1 -> sell 1st stock, trans 2 -> buy 2nd stock, trans 3 -> sell 2nd stock
+    //if trans # is odd, then it is buy else it is sell
+    //time - O(n*2k) -> number of states
+    //space - O(n*2k + n) -> cache plus call stack
+    private int findMaxProfit(int[] prices, int index, Integer[][] cache, int transactionNumber, int limit) {
+        //base
+        if(transactionNumber == limit || index == prices.length)
+        {
+            return 0; //cap is reached or days exhausted
+        }
+        //check cache
+        if(cache[index][transactionNumber] != null)
+        {
+            return cache[index][transactionNumber];
+        }
+        
+        //logic
+        if(transactionNumber % 2 == 0)
+        {
+            //buying a stock is feasible
+            //loose prices[index] because of buying stock and trans # gets incremented because buy is finished
+            int buyOnCurrentDay = -prices[index] + findMaxProfit(prices, index + 1, cache, transactionNumber + 1, limit);
+            int skipCurrentDay = findMaxProfit(prices, index + 1, cache, transactionNumber, limit); //skip current day
+            
+            cache[index][transactionNumber] = Math.max(buyOnCurrentDay, skipCurrentDay);
+        }
+        else
+        {
+            //selling is feasible
+            //gain prices[index] because of selling stock and trans # gets incremented because sell is finished
+            int sellOnCurrentDay = prices[index] + findMaxProfit(prices, index + 1, cache, transactionNumber + 1, limit);
+            int skipCurrentDay = findMaxProfit(prices, index + 1, cache, transactionNumber, limit); //skip current day
+            
+            cache[index][transactionNumber] = Math.max(sellOnCurrentDay, skipCurrentDay);
+ 
+        }
+        
+        return cache[index][transactionNumber];
+    }
+    
+    //time, space - O(n*2k)
+    private int findMaxProfitTabulation(int[] prices, int limit) {
+        //int[][] result = new int[prices.length + 1][limit + 1]; //dp array to track all n*limit states
+        int[] nextDayResult = new int[limit + 1]; //tracks i+1 st day
+        int[] currentDayResult = new int[limit + 1]; //tracks ith day
+        
+        //f(i) depends on f(i + 1)
+        for(int i = prices.length - 1; i >= 0; i--)
+        {
+            //for all possible buy and sell
+            for(int trans = 0; trans < limit; trans++)
+            {
+                //buy
+                if(trans % 2 == 0)
+                {
+                    int buyOnCurrentDay = -prices[i] + nextDayResult[trans + 1];
+                    int skipCurrentDay = nextDayResult[trans];
+                    
+                    currentDayResult[trans] = Math.max(buyOnCurrentDay, skipCurrentDay);
+                }
+                //sell
+                else
+                {
+                    int sellOnCurrentDay = prices[i] + nextDayResult[trans + 1];
+                    int skipCurrentDay = nextDayResult[trans];
+                    
+                    currentDayResult[trans] = Math.max(sellOnCurrentDay, skipCurrentDay);
+                }
+            }
+            
+            nextDayResult = currentDayResult;
+        }
+        
+        return nextDayResult[0]; //return 0th day 1st buy
+    }
+}
