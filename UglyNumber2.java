@@ -1,84 +1,104 @@
 // 264.
+//brute force - for each number, find prime factors, check if number other 2,3,5 is a prime factor, if so don't count it
+//approach -> multiples of 2,3,5 could potentially be ugly numbers. The multiples of other numbers can be skipped
+//but we can't continously pick multiples of just 2,3,5 => ex: 2*7 = 14 (not ugly due to 7), 2*35 = 2*5*7 (not ugly due to 7)
+//so pick multiples of 2,3,5 just from the well defined set starting with just 1
 class Solution {
     public int nthUglyNumber(int n) {
-        //brute force - have a counter at 0, run a loop from 1, whenever an ugly number is found, increment counter and return when counter hits n
-        //edge
-        if(n == 1)
-        {
-            return 1; // 1 is the 1st ugly number
-        }
-        
-        return dp(n);
+        //return (int)uglyNumberPicker(n);
+        return uglyNumberFinder(n);
     }
     
-    //time - O(n logn)
+    //time - O(nlogn)
     //space - O(n)
-    private int heaps(int n) {
-        long current = 0; //current tracks the current ugly number
-        int count = 0; // count tracks the number of ugly numbers found so far
+    private long uglyNumberPicker(int n) {
+        HashSet<Long> uglyNumbers = new HashSet<>(); //set to mainintain unique number
+        PriorityQueue<Long> support = new PriorityQueue<Long>(); //min heap to pick min number from well defined set
         
-        HashSet<Long> uglyNumbers = new HashSet<>(); //maintains the ugly numbers found so far
-        PriorityQueue<Long> support = new PriorityQueue<>(); //min heap to get the next smallest number for which factors has to be found
-        uglyNumbers.add(1L); //add 1 to both set and pq
-        support.offer(1L);
+        uglyNumbers.add(1l);
+        support.offer(1l); //1 is 1st ugly number
         
-        //as long as n ugly numbers are not found
-        while(count != n)
+        int count = 0; //ugly numbers seen so far
+        
+        while(count < n)
         {
-            current = support.poll(); //get the next ugly number from pq and icrease count
+            //as long as n ugly numbers aren't seen
+            //pick min from well defined set
+            long currentUglyNumber = support.poll();
             count++;
-            //for each number 2,3,5 find multiple of current & add it to set and pq if they arent already present in set
-            long[] primeFactors = {2, 3, 5};
-            for(long factor : primeFactors)
+            
+            if(count == n)
             {
-                long next = factor * current;
-                if(!uglyNumbers.contains(next))
-                {
-                    uglyNumbers.add(next);
-                    support.offer(next);
-                }
+                return currentUglyNumber; //result
+            }
+            
+            //find 2,3,5 multiples of current
+            long multiple2 = 2 * currentUglyNumber;
+            long multiple3 = 3 * currentUglyNumber;
+            long multiple5 = 5 * currentUglyNumber;
+            
+            //if these numbers weren't seen earlier, add to set and heap
+            if(!uglyNumbers.contains(multiple2))
+            {
+                uglyNumbers.add(multiple2);
+                support.offer(multiple2);
+            }
+            if(!uglyNumbers.contains(multiple3))
+            {
+                uglyNumbers.add(multiple3);
+                support.offer(multiple3);
+            }
+            if(!uglyNumbers.contains(multiple5))
+            {
+                uglyNumbers.add(multiple5);
+                support.offer(multiple5);
             }
         }
         
-        return (int)current;
-    } 
+        return -1; //code never reachees here for valid n
+    }
     
     //time - O(n)
     //space - O(n)
-    private int dp(int n) {
-        int[] result = new int[n]; //result tracks ugly numbers from 1 to n
-        result[0] = 1; //1st ugly number is 1
-        int p2 = 0;
+    private int uglyNumberFinder(int n) {
+        int[] result = new int[n]; //tracks all n ugly numbers
+        
+        result[0] = 1; //well defined set starts with just 1
+        
+        //3 pointers are needed to track 2,3,5 multiples
+        //initially all are at 0th index because 2,3,5 multiplies of 1 are yet to be picked
+        int p2 = 0; 
         int p3 = 0;
         int p5 = 0;
-        int n2 = 0;
-        int n3 = 0;
-        int n5 = 0;
-        //for each index from 1 to n - 1
-        //find n2 = 2 * result[p2], n3 = 3 * result[p3], n5 = 5 * result[p5]
-        //result[i] = min(n2,n3,n5)
-        //if result[i] = n2 increase p2 by 1, if result[i] = n3 increase p3 by 1 and if result[i] = n5 increase p5 by 1
-        for(int i = 1; i < result.length; i++)
+        
+        for(int index = 1; index < n; index++)
         {
-            n2 = 2 * result[p2];
-            n3 = 3 * result[p3];
-            n5 = 5 * result[p5];
-            result[i] = Math.min(n2, Math.min(n3, n5));
-            if(result[i] == n2)
+            //find 2,3,5 multiples of p2,p3,p5 elements
+            int multiple2 = 2 * result[p2];
+            int multiple3 = 3 * result[p3];
+            int multiple5 = 5 * result[p5];
+            
+            //pick min and place it in index
+            result[index] = Math.min(multiple2,
+                                    Math.min(multiple3, multiple5));
+            
+            if(result[index] == multiple2)
             {
+                //2 multiple of p2 is picked 
                 p2++;
             }
-            if(result[i] == n3)
+            if(result[index] == multiple3)
             {
+                //3 multiple of p3 is picked 
                 p3++;
             }
-            if(result[i] == n5)
+            if(result[index] == multiple5)
             {
+                //5 multiple of p5 is picked 
                 p5++;
             }
         }
         
-        //return last cell value
         return result[n - 1];
     }
 }
