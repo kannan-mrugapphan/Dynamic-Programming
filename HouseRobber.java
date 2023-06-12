@@ -92,3 +92,72 @@ class Solution {
         return previous;
     }
 }
+
+//213.
+class Solution {
+    public int rob(int[] nums) {
+        //edge
+        if(nums == null || nums.length == 0)
+        {
+            return 0;
+        }
+        if(nums.length == 1)
+        {
+            return nums[0];
+        }
+        if(nums.length == 2)
+        {
+            return Math.max(nums[0], nums[1]);
+        }
+
+        //circular array i.e. 0th index and last index are connected
+        //2 options - skip 0th house and consider houses from 1 to n-1 and find max possible profit
+        //skip last house and consider houses from 0 to n-2 and find max possible profit
+        //return largest among 2 options
+        return Math.max(houseRobber1(nums, true), houseRobber1(nums, false));
+    }
+
+    //time - O(n)
+    //space - O(1)
+    private int houseRobber1(int[] nums, boolean flag)
+    {
+        //start and end tracks the portion of nums[] on which houseRobber1 needs to be run
+        int start = 0;
+        int end = nums.length - 1;
+
+        if(flag)
+        {
+            start = 1; //1st option where 0th house is skipped
+        }
+        else
+        {
+            end = nums.length - 2; //2nd option where last house is skipped
+        }
+
+        if(end - start + 1 == 1)
+        {
+            return nums[start]; //only 1 house - rob it
+        }
+        if(end - start + 1 == 2)
+        {
+            return Math.max(nums[start], nums[start + 1]); //2 houses - rob the house with max amount
+        }
+
+        int secondPrev = nums[start]; //result[0] 
+        int prev = Math.max(nums[start], nums[start + 1]); //result[1]
+
+        for(int i = start + 2; i <= end; i++)
+        {
+            int steal = nums[i] + secondPrev; //rob ith house and goto i-2 house
+            int skip = prev; //skip i and goto i-1
+
+            int current = Math.max(steal, skip); //max among 2 choices
+
+            //update prev and secondPrev for next iteration
+            secondPrev = prev;
+            prev = current;
+        }
+
+        return prev;
+    }
+}
