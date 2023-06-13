@@ -1,66 +1,61 @@
 // 64.
 class Solution {
-    
-    int minSum = Integer.MAX_VALUE; //global result
     public int minPathSum(int[][] grid) {
-        // pathFinder(grid, 0, 0, 0);
-        // return minSum;
-        return pathFinderDp(grid);
+        //return findPath(grid, grid.length - 1, grid[0].length - 1, new Integer[grid.length][grid[0].length]);
+        return findPath(grid);
     }
-    
-    //time - O(2^mn)
-    //space - O(mn)
-    private void pathFinder(int[][] grid, int row, int col, int sum) {
+
+    //findPath(row, col) returns the min cost path from (0, 0) to (row, col)
+    //time - O(2^mn) 2 choices (up or left) for each cell in grid
+    //space - O(m+n) length of longest path is stack size
+    //time with memoization - O(mn)
+    //space with memoization - O(mn) for cache and O(m+n) for call stack
+    private int findPath(int[][] grid, int row, int col, Integer[][] cache)
+    {   
         //base
-        //out of bounds
-        if(row >= grid.length || col >= grid[0].length)
+        if(row == 0 && col == 0)
         {
-            return;
+            return grid[0][0]; //top left reached
         }
-        //bottom right corner reached
-        if(row == grid.length - 1 && col == grid[0].length - 1)
+
+        //check cache
+        if(cache[row][col] != null)
         {
-            sum += grid[grid.length - 1][grid[0].length - 1]; //add val of bottom right corner cell to path sum
-            minSum = Math.min(minSum, sum); //update min path sum
-            return;
+            return cache[row][col];
         }
-        //logic
-        int currentSum = sum + grid[row][col]; //add current cell val to path sum
-        pathFinder(grid, row, col + 1, currentSum); //go right
-        pathFinder(grid, row + 1, col, currentSum); //go down
+
+        int up = (row == 0) ? (int)1e7 : findPath(grid, row - 1, col, cache); //from prev row same col if within bounds
+        int left = (col == 0) ? (int)1e7 : findPath(grid, row, col - 1, cache); //from same row prev col if within bounds
+
+        int result = grid[row][col] + Math.min(up, left);
+        cache[row][col] = result; //update cache
+        return result;
     }
-    
+
     //time - O(mn)
-    //space - O(mn)
-    private int pathFinderDp(int[][] grid) {
-        int[][] dp = new int[grid.length][grid[0].length]; //support dp matrix
-        dp[0][0] = grid[0][0]; //if the i/p grid has only one cell, then the min path sum is val in that cell
-        
-        //all cells in 0th row can be reached only from the adjeacent left cell in same row
-        //so sum of the path till that point is running sum
-        for(int i = 1; i < grid.length; i++)
+    //space - O(mn) 
+    private int findPath(int[][] grid)
+    {
+        int[][] result = new int[grid.length][grid[0].length]; //result[i][j] tracks the min cost to (i,j) from (0,0)
+
+        result[0][0] = grid[0][0]; //base case in recursion
+
+        for(int row = 0; row < grid.length; row++)
         {
-            dp[i][0] = grid[i][0] + dp[i - 1][0];
-        }
-        
-        //all cells in 0th col can be reached only from the adjeacent top cell in same col
-        //so sum of the path till that point is running sum
-        for(int i = 1; i < grid[0].length; i++)
-        {
-            dp[0][i] = grid[0][i] + dp[0][i - 1];
-        }
-        
-        //all other cells can be reached from top or left
-        //so min path sum is min of top and left plus current cell value
-        for(int i = 1; i < grid.length; i++)
-        {
-            for(int j = 1; j < grid[0].length; j++)
+            for(int col = 0; col < grid[0].length; col++)
             {
-                dp[i][j] = grid[i][j] + Math.min(dp[i - 1][j], dp[i][j - 1]);
+                if(row == 0 && col == 0)
+                {
+                    continue; //already set
+                }
+
+                int up = (row == 0) ? (int)1e7 : result[row - 1][col]; //from prev row same col if within bounds
+                int left = (col == 0) ? (int)1e7 : result[row][col - 1]; //from same row prev col if within bounds
+
+                result[row][col] = grid[row][col] + Math.min(up, left);
             }
         }
-        
-        return dp[grid.length - 1][grid[0].length - 1]; //return bottom right corner
+
+        return result[grid.length - 1][grid[0].length - 1];
     }
-    
 }
