@@ -7,37 +7,41 @@ class Solution {
             return 0; //if there is an obstacle in bottom right cell, total ways to reach it is 0
         }
         
-        //return findPaths(obstacleGrid, 0, 0, new Integer[obstacleGrid.length][obstacleGrid[0].length]);
+        //return findWays(obstacleGrid.length - 1, obstacleGrid[0].length - 1, obstacleGrid, new Integer[obstacleGrid.length][obstacleGrid[0].length]);
         return findWays(obstacleGrid);
     }
 
-    //time - O(2^mn) - 2 choices (down and right) for each cell in grid
-    //space - O(m+n) - max call stack size is length of longest path
-
-    //time with memoization - O(mn) 
-    //space with memoization - O(mn) 
-    private int findPaths(int[][] grid, int row, int col, Integer[][] cache)
+    //findWays(row, col) tracks number of ways to reach row, col from 0, 0
+    //time - O(2^mn) 2 choices (left or up) for each cell in matrix
+    //space - O(m+n) length of longest path is max stack size
+    //time with memoization - O(mn)
+    //space with memoization - O(mn) for cache and O(m+n) for call stack
+    private int findWays(int row, int col, int[][] grid, Integer[][] cache)
     {
-        //base 1
-        if(row == grid.length - 1 && col == grid[0].length - 1 && grid[row][col] != 1)
+        //base1
+        if(grid[row][col] == 1)
         {
-            return 1; //bottom right cell reached and no obstacle is found, 1 way found
+            return 0; //can't reach row, col due to obstacle
         }
-        //base 2
-        if(row == grid.length || col == grid[0].length || grid[row][col] == 1)
+
+        //base2
+        if(row == 0 && col == 0)
         {
-            return 0; //fell out of bounds or stuck at an obstacle
+            return 1; //top left is reached 
         }
+
         //check cache
         if(cache[row][col] != null)
         {
             return cache[row][col];
         }
 
-        int downPath = findPaths(grid, row + 1, col, cache); //next row, same col
-        int rightPath = findPaths(grid, row, col + 1, cache); //same row, next col
+        //reach row, col from top i.e row - 1, col. If row is 0, we can't reach row, col from up
+        int up = (row == 0) ? 0 : findWays(row - 1, col, grid, cache); 
+        //reach row, col from left i.e row, col - 1. If col is 0, we can't reach row, col from left
+        int left = (col == 0) ? 0 : findWays(row, col - 1, grid, cache); 
 
-        int result = downPath + rightPath; //sum of 2 possible options gives the result
+        int result = up + left; //return sum of 2 options
         cache[row][col] = result; //update cache
         return result;
     }
@@ -46,31 +50,29 @@ class Solution {
     //space - O(mn)
     private int findWays(int[][] grid)
     {
-        //result[i][j] tracks the total ways to reach bottom right cell from i,j
-        int[][] result = new int[grid.length][grid[0].length]; 
-        result[grid.length - 1][grid[0].length - 1] = 1; //base case in recursion
+        int[][] result = new int[grid.length][grid[0].length]; //result[i][j] tracks number of ways to reach (i, j) from (o, 0)
+        result[0][0] = (grid[0][0] == 1) ? 0 : 1; //base case in recursion
 
-        for(int row = grid.length - 1; row >= 0; row--)
+        for(int i = 0; i < grid.length; i++)
         {
-            for(int col = grid[0].length - 1; col >= 0; col--)
+            for(int j = 0; j < grid[0].length; j++)
             {
-                if(row == grid.length - 1 && col == grid[0].length - 1)
+                if(i == 0 && j == 0)
                 {
-                    continue; //already set
+                    continue; //already set in base case
+                }
+                if(grid[i][j] == 1)
+                {
+                    continue; //(i, j) is unreachable
                 }
 
-                //if current cell has obstacle then total ways to reach bottom right cell from current is 0
-                if(grid[row][col] != 1)
-                {
-                    //from current we can go down or right (if within bounds)
-                    int downAnswer = (row == grid.length - 1) ? 0 : result[row + 1][col];
-                    int rightAnswer = (col == grid[0].length - 1) ? 0 : result[row][col + 1];
+                int up = (i == 0) ? 0 : result[i - 1][j]; //prev row same col
+                int left = (j == 0) ? 0 : result[i][j - 1]; //same row prev col
 
-                    result[row][col] = downAnswer + rightAnswer; //sum of 2 options
-                }
+                result[i][j] = up + left;
             }
         }
 
-        return result[0][0];
+        return result[grid.length - 1][grid[0].length - 1];
     }
 }
