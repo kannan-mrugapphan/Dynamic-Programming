@@ -87,3 +87,92 @@ class Solution {
         return result[coins.length][amount];
     }
 }
+
+// 518.
+class Solution {
+    public int change(int amount, int[] coins) {
+        //return findWays(coins, coins.length - 1, amount, new Integer[coins.length][amount + 1]);
+
+        return findWays(coins, amount);
+    }
+
+    //findWays(i, a) tracks the total ways to make amount a with coins[0, i]
+    //time -  O(m2^n) - for each coin 2 options skip or pick
+    //space - O(m+n) - max call stack size
+    //time with memoization - O(mn)
+    //space with memoization - O(mn) for cache and O(m+n) for call stack
+    private int findWays(int[] coins, int index, int remainingAmount, Integer[][] cache)
+    {
+        //base 1
+        if(remainingAmount == 0)
+        {
+            return 1; //if amount to be made becomes 0, 1 way is found to make the given amount
+        }
+
+        //base 2
+        if(index < 0 || remainingAmount < 0)
+        {
+            //no denominations are there but amount remaining is > 0 so no way or remainingAmount becomes < 0
+            return 0; 
+        }
+
+        //check cache
+        if(cache[index][remainingAmount] != null)
+        {
+            return cache[index][remainingAmount];
+        }
+
+        //skip the current denomination and goto the previous with remainingAmount staying the same
+        int skip = findWays(coins, index - 1, remainingAmount, cache);
+        int pick = 0;
+
+        //pick case becomes possible only when remainingAmount >= current denomination
+        if(coins[index] <= remainingAmount)
+        {
+            //choose current, remainingAmount becomes initialAmount - currentValue and index stays same due to infinite supply of coins
+            pick = findWays(coins, index, remainingAmount - coins[index], cache);
+        }
+
+        int result = pick + skip; //sum of 2 options
+        cache[index][remainingAmount] = result; //update cache
+        return result;
+    }
+
+    //time - O(mn)
+    //space - O(mn) 
+    private int findWays(int[] coins, int amount)
+    {
+        int[][] result = new int[coins.length + 1][amount + 1]; //result[i][j] tracks ways to make j with coins[0, i]
+
+        for(int money = 1; money <= amount; money++)
+        {
+            result[0][money] = 0; //no coins and any amount has no way - base case 2
+        }
+
+        for(int coin = 0; coin <= coins.length; coin++)
+        {
+            result[coin][0] = 1; //if remaining amount is 0, ways possible is 1 for any coins[] - base case 1
+        }
+
+        for(int coin = 1; coin <= coins.length; coin++)
+        {
+            for(int money = 1; money <= amount; money++)
+            {
+                //skip the current denomination and goto the previous with remainingAmount staying the same
+                int skip = result[coin - 1][money];
+                int pick = 0;
+
+                //pick case becomes possible only when remainingAmount >= current denomination
+                if(coins[coin - 1] <= money)
+                {
+                    //choose current, remainingAmount becomes initialAmount - currentValue and index stays same due to infinite supply of coins
+                    pick = result[coin][money - coins[coin - 1]];
+                }
+
+                result[coin][money] = pick + skip; //sum of 2 options
+            }
+        }
+
+        return result[coins.length][amount];
+    }
+}
