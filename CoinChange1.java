@@ -1,45 +1,89 @@
 // 322.
-// time - O(length of coins array * amount)
-// space - O(length of coins array * amount)
 class Solution {
     public int coinChange(int[] coins, int amount) {
-        //edge 
-        if(coins == null || coins.length == 0)
+        //int result = findMinimumCoins(coins, coins.length - 1, amount, new Integer[coins.length][amount + 1]);
+
+        int result = findMinimumCoins(coins, amount);
+        return (result == (int) 1e7) ? -1 : result;
+    }
+
+    //findMinimumCoins(i, a) tracks the minimum coins needed to make amount a with coins[0, i]
+    //time -  O(m2^n) - for each coin 2 options skip or pick
+    //space - O(m+n) - max call stack size
+    //time with memoization - O(mn)
+    //space with memoization - O(mn) for cache and O(m+n) for call stack
+    private int findMinimumCoins(int[] coins, int index, int remainingAmount, Integer[][] cache)
+    {
+        //base 1
+        if(remainingAmount == 0)
         {
-            return -1;
+            return 0; //if amount to be made becomes 0, no more coins needed
         }
-        int m = coins.length + 1;
-        int n = amount + 1;
-        int[][] result = new int[m][n];
-        //base
-        for(int i = 0; i < n; i++)
+
+        //base 2
+        if(index < 0 || remainingAmount < 0)
         {
-            //if no coins are given, # of coins needed is infinity for any amount
-            result[0][i] = Integer.MAX_VALUE - 100; //-100 to prevent underflow
+            //no denominations are there but amount remaining is > 0 so infinite coins or remainingAmount becomes < 0
+            return (int) 1e7; 
         }
-        for(int i = 1; i < m; i++)
+
+        //check cache
+        if(cache[index][remainingAmount] != null)
         {
-            result[i][0] = 0; //for amount 0, # of coins is 0
+            return cache[index][remainingAmount];
         }
-        for(int i = 1; i < m; i++)
+
+        //skip the current denomination and goto the previous with remainingAmount staying the same
+        int skip = findMinimumCoins(coins, index - 1, remainingAmount, cache);
+        int pick = (int) 1e7;
+
+        //pick case becomes possible only when remainingAmount >= current denomination
+        if(coins[index] <= remainingAmount)
         {
-            for(int j = 1; j < n; j++)
+            //choose current, remainingAmount becomes initialAmount - currentValue and index stays same due to infinite supply of coins
+            pick = 1 + findMinimumCoins(coins, index, remainingAmount - coins[index], cache);
+        }
+
+        int result = Math.min(pick, skip); //min among 2 options
+        cache[index][remainingAmount] = result; //update cache
+        return result;
+    }
+
+    //time - O(mn)
+    //space - O(mn) 
+    private int findMinimumCoins(int[] coins, int amount)
+    {
+        int[][] result = new int[coins.length + 1][amount + 1]; //result[i][j] tracks min coins needed to make j with coins[0, i]
+
+        for(int money = 1; money <= amount; money++)
+        {
+            result[0][money] = (int) 1e7; //no coins and any amount needs infinite coins - base case 2
+        }
+
+        for(int coin = 0; coin <= coins.length; coin++)
+        {
+            result[coin][0] = 0; //if remaining amount is 0, coins needed is 0 for any coins[] - base case 1
+        }
+
+        for(int coin = 1; coin <= coins.length; coin++)
+        {
+            for(int money = 1; money <= amount; money++)
             {
-                int currentCoin = coins[i - 1];
-                if(currentCoin > j) 
+                //skip the current denomination and goto the previous with remainingAmount staying the same
+                int skip = result[coin - 1][money];
+                int pick = (int) 1e7;
+
+                //pick case becomes possible only when remainingAmount >= current denomination
+                if(coins[coin - 1] <= money)
                 {
-                    //cant choose the coin - as the current coin is above the current amount
-                    result[i][j] = result[i - 1][j];
+                    //choose current, remainingAmount becomes initialAmount - currentValue and index stays same due to infinite supply of coins
+                    pick = 1 + result[coin][money - coins[coin - 1]];
                 }
-                else
-                {
-                    //choose or dont choose the coin and store the min
-                    int dontChoose = result[i - 1][j];
-                    int choose = 1 + result[i][j - currentCoin];
-                    result[i][j] = Math.min(choose, dontChoose);
-                }
+
+                result[coin][money] = Math.min(pick, skip); //min among 2 options
             }
         }
-        return (result[m - 1][n - 1] == Integer.MAX_VALUE - 100) ? -1 : result[m - 1][n - 1];
+
+        return result[coins.length][amount];
     }
 }
