@@ -1,104 +1,125 @@
 // 221.
 class Solution {
     public int maximalSquare(char[][] matrix) {
-        //edge
-        if(matrix == null || matrix.length == 0 || matrix[0].length == 0)
-        {
-            return 0;
-        }
-        return maxSquare(matrix);
+        // int maxSideLength = 0;
+        // for(int i = 0; i < matrix.length; i++)
+        // {
+        //     for(int j = 0; j < matrix[0].length; j++)
+        //     {
+        //         int sideLength = findMaxSideLength(matrix, i, j); //(i, j) is top left
+        //         maxSideLength = Math.max(maxSideLength, sideLength);
+        //     }
+        // }
+
+        // return maxSideLength * maxSideLength; //return area
+        return findMaxSideLength(matrix);
     }
-    
-    //time - O(n^2 * m^2)
-    //space - constant
-    private int bruteForce(char[][] matrix) {
-        int m = matrix.length; 
-        int n = matrix[0].length;
-        boolean flag = false;
-        int maxSide = 0;
-        for(int i = 0; i < m; i++)
+
+    //returns max side length of square with top left corner is (row,col)
+    //time - O(mn) for each cell to get total O(m^2n^2)
+    //space - O(1)
+    private int findMaxSideLength(char[][] matrix, int row, int col)
+    {
+        if(matrix[row][col] == '0')
         {
-            for(int j = 0; j < n; j++)
+            return 0; //top left cell is 0
+        }
+
+        boolean flag = true; //checks if current is a valid square
+        int sideLength = 1; //current cell has 1 so it is a square of side 1
+
+        //as long as current is valid, expand
+        while(flag)
+        {
+            int diagonalRow = row + sideLength; //check the diagonal right cell of current
+            int diagonalCol = col + sideLength;
+
+            //if next layer is outofbounds
+            if(diagonalRow >= matrix.length || diagonalCol >= matrix[0].length)
             {
-                if(matrix[i][j] == '1')
+                return sideLength; //prev layer was valid
+            }
+
+            //all cols from col to diagonalCol in diagonalRow should be 1
+            for(int c = col; c <= diagonalCol; c++)
+            {
+                if(matrix[diagonalRow][c] != '1')
                 {
-                    flag = true; //found a valid square of side 1 at i,j
-                    int current = 1; //side of current square is 1 and its at i,j cell
-                    //start exploring from i,j
-                    while(i + current < m && j + current < n && flag)
+                    flag = false; //next layer is invalid
+                    break;
+                }
+            }
+
+            if(flag)
+            {
+                //all rows from to row to diagonalRow in diagonalCol should be 1
+                for(int r = row; r <= diagonalRow; r++)
+                {
+                    if(matrix[r][diagonalCol] != '1')
                     {
-                        //as long as the next layer is within bounds and a valid square is seen continue exploring
-                        //check for 1s in all rows from i to i + current and column is j + current
-                        for(int k = i; k <= i + current; k++)
-                        {
-                            if(matrix[k][j + current] == '0')
-                            {
-                                flag = false; //square becomes invalid so set flag as false and break
-                                break;
-                            }
-                        }
-                        
-                        //check for all 1s in all columns from j to j + current and row is i + current
-                        for(int k = j; k <= j + current; k++)
-                        {
-                            if(matrix[i + current][k] == '0')
-                            {
-                                flag = false; //square becomes invalid so set flag as false and break
-                                break;
-                            }
-                        }
-                        
-                        if(flag) //square remains valid
-                        {
-                            current++; //increase sidelength and check again
-                        }
+                        flag = false; //next layer is invalid
+                        break;
                     }
-                    
-                    maxSide = Math.max(maxSide, current); //update side length for square at this location i,j
                 }
             }
+
+            if(flag)
+            {
+                //next layer is valid at this point
+                sideLength++; //goto next layer
+            }
+            else
+            {
+                return sideLength; //current layer is invalid so return prev sideLegth
+            }
         }
-        return maxSide * maxSide; //area
+
+        return sideLength; //never reaches here
     }
-    
-    //time - O(n*m)
-    //space - O(n*m)
-    private int maxSquare(char[][] matrix) {
-        int m = matrix.length; 
-        int n = matrix[0].length;
-        int[][] result = new int[m][n];
-        int maxSide = 0;
-        //base
-        //for all cells in 1st row and 1st col, result square is 1 if value in cell is 1
-        for(int i = 0; i < n; i++)
+
+    //time - O(mn)
+    //space - O(mn)
+    private int findMaxSideLength(char[][] matrix)
+    {
+        //result[i][j] is the side length of largest square with (i,j) as bottom right cell
+        int[][] result = new int[matrix.length][matrix[0].length];
+        int maxSideLength = 0; //return value
+
+        //for all cells in 0th row or 0th col, the cell can't be expanded to get a larger square
+        for(int col = 0; col < matrix[0].length; col++)
         {
-            if(matrix[0][i] == '1')
+            if(matrix[0][col] == '1')
             {
-                result[0][i] = 1;
-                maxSide = 1; //updating as 1 valid square of side 1 is found
+                //1 square of side length 1 is found which can't be expanded
+                result[0][col] = 1;
+                maxSideLength = 1; //1 square of side 1 is found
             }
         }
-        for(int i = 0; i < m; i++)
+
+        for(int row = 0; row < matrix.length; row++)
         {
-            if(matrix[i][0] == '1')
+            if(matrix[row][0] == '1')
             {
-                result[i][0] = 1;
-                maxSide = 1; //updating as 1 valid square of side 1 is found
+                //1 square of side length 1 is found which can't be expanded
+                result[row][0] = 1;
+                maxSideLength = 1; //1 square of side 1 is found
             }
         }
-        
-        for(int i = 1; i < m; i++)
+
+        for(int i = 1; i < matrix.length; i++)
         {
-            for(int j = 1; j < n; j++)
+            for(int j = 1; j < matrix[0].length; j++)
             {
+                //if current cell is 1
                 if(matrix[i][j] == '1')
                 {
-                    //the possiblity of extending this cell is based on its minimum of 3 neighbours
-                    result[i][j] = 1 + Math.min(result[i - 1][j - 1], Math.min(result[i - 1][j], result[i][j - 1]));
-                    maxSide = Math.max(maxSide, result[i][j]); //update max side so far
+                    //it can be expanded based on max sideLengths of squares ending at top, left and diagonal cells
+                    result[i][j] = 1 + Math.min(result[i - 1][j - 1], Math.min(result[i - 1][j], result[i][j - 1])); //1 for current cell, and expansion is based on 3 cells
+                    maxSideLength = Math.max(maxSideLength, result[i][j]); //update side
                 }
             }
         }
-        return maxSide * maxSide; //return area
+
+        return maxSideLength * maxSideLength; //area
     }
 }
