@@ -1,62 +1,71 @@
 // 368.
-// time - O(n^2)
-// space - O(n)
-//approach - similar to LIS, sort nums[] and do LIS adding extra condition of divisiblity
-//consider the following subset {6, 3, 9}, if we decide to add 27 to this subset we have to check if 27 is divisible by all 6,3,9
-//if sorted the subset will be of form {3, 6, 9} and it is sufficient to check 27 with last element alone
-
 class Solution {
     public List<Integer> largestDivisibleSubset(int[] nums) {
-        //edge
-        if(nums == null || nums.length == 0)
+        Arrays.sort(nums);
+        return findLds(nums);
+    }
+
+    //consider subset {4,2,1,8}. It is a divisible subset of length 4. It is same as {2,1,4,8} and {1,2,4,8}
+    //if current subset is sorted, it will be easy to check if it possible to add an element to this subset
+    //for eg. {1,2,4,8} it is easy to check if it is possible to add 16
+    //since 16 divides 8, it will divide all previous elements because of tranisitive nature
+    //to look at sorted subsets everytime, the whole array has to be sorted
+    //time - O(n^2)
+    //space - O(n)
+    private List<Integer> findLds(int[] nums)
+    {
+        //lds[i] is length of largest divisible subset with nums[i] as last element
+        int[] lds = new int[nums.length]; 
+        Arrays.fill(lds, 1); //each element is a divisble subset by itself of length 1
+
+        //previous[i] is the previous index of largest divisible subset where nums[i] is last element
+        int[] previous = new int[nums.length]; 
+        for(int i = 0; i < nums.length; i++)
         {
-            return new ArrayList<>();
+            previous[i] = i; //each element is a divisble subset by itself of length 1 so previous is itself
         }
-        
-        //sorting is done to make divisors appear in order - so its enough to check if current is divisible by last element of subset and by property of transitivity current is divisible by all elements in subset
-        Arrays.sort(nums); 
-        
-        int[] result = new int[nums.length];
-        Arrays.fill(result, 1); //every element is a subset in which all elemenets are paiwise divisible
-        
-        int[] path = new int[nums.length]; //tracks path
-        Arrays.fill(path, -1); 
-        
-        int max = 0; //size of return list
-        int maxIndex = 0; //pos in result[] where max occurs
-        
-         
-        for(int i = 1; i < nums.length; i++)
+
+        int ldsLength = 1; // return ans
+        int ldsLastIndex = 0; //last index at which lds ends
+
+        for(int index = 1; index < nums.length; index++)
         {
-            for(int j = 0; j < i; j++)
+            for(int prev = 0; prev < index; prev++)
             {
-                //i is divisble by j if i % j = 0 and i > j
-                //thus i can be added to subset which has j, by property of transitivity i is divisible all other elements in taht subset
-                if(nums[i] > nums[j] && nums[i] % nums[j] == 0)
+                //for each element, try to see if it can be appended with an exisiting element
+                if(nums[index] % nums[prev] == 0)
                 {
-                    if(result[i] < 1 + result[j])
+                    //index divides prev and can be appended to subset ending with prev
+                    int currentDivisibleSubsetLength = 1 + lds[prev];
+                    //if larger subset found
+                    if(lds[index] < currentDivisibleSubsetLength)
                     {
-                        //update result, max, path, maxIndex
-                        result[i] = 1 + result[j];
-                        path[i] = j;
-                        if(max < result[i])
-                        {
-                            max = result[i];
-                            maxIndex = i;
-                        }
+                        lds[index] = currentDivisibleSubsetLength;
+                        previous[index] = prev;
                     }
                 }
             }
+
+            //if lds ending at index is largest update result
+            if(ldsLength < lds[index])
+            {
+                ldsLength = lds[index];
+                ldsLastIndex = index;
+            }
         }
-        
-        //fill the return list
-        List<Integer> ans = new ArrayList<>();
-        while (maxIndex != -1)
+
+        List<Integer> result = new LinkedList<>(); //return list tracking lds
+
+        //as long as prev is not itself
+        while(ldsLastIndex != previous[ldsLastIndex])
         {
-            ans.add(nums[maxIndex]);
-            maxIndex = path[maxIndex];
+            result.add(0, nums[ldsLastIndex]); //add it to result at first and goto prev
+            ldsLastIndex = previous[ldsLastIndex];
         }
-        
-        return ans;
+
+        //add 1st element to result
+        result.add(0, nums[ldsLastIndex]);
+        return result;
     }
+
 }
