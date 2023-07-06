@@ -1,146 +1,216 @@
-// 300.
-// brute force - all possible subsequences - power set of given list - chack for lis - time - n!
 class Solution {
     public int lengthOfLIS(int[] nums) {
-        //edge
-        if(nums == null || nums.length == 0)
-        {
-            return 0;
-        }
-        return lisBinarySerach(nums);
+        //return findLIS(nums, 0, -1);
+        //return findLIS(nums);
+        return findLISUsingBinarySearch(nums);
     }
-    
+
+    //f(i, prev) tracks LIS possible from nums[i, nums.length-1] with the last picked element is prev
+    //time - O(2^n)
+    //space - O(n)
+    private int findLIS(int[] nums, int index, int previousIndex)
+    {
+        //base
+        if(index == nums.length)
+        {
+            return 0; //no more elements can be picked
+        }
+
+        //skip current element by not including it in the current LIS
+        int skip = findLIS(nums, index + 1, previousIndex);
+        int pick = Integer.MIN_VALUE;
+        //pick is possible only if current is larger than previous
+        if(previousIndex == -1 || nums[index] > nums[previousIndex])
+        {
+            //current is picked and previous now becomes current
+            pick = 1 + findLIS(nums, index + 1, index);
+        }
+
+        return Math.max(skip, pick);
+    }
+
     //time - O(n^2)
     //space - O(n)
-    private int lisDP(int[] nums) {
-        int max = 1;
+    private int findLIS(int[] nums)
+    {
+        //result[i] tracks the length of LIS with nums[i] as last element
         int[] result = new int[nums.length];
-        Arrays.fill(result, 1); //every element is an increasing sub sequence of length 1
-        
-        for(int i = 1; i < nums.length; i++)
+        //prev[i] tracks the prev index present in LIS where nums[i] is last element
+        int[] prev = new int[nums.length];
+
+        int lis = 1; //return val
+        int lastIndex = 0; //used to find LIS
+
+        Arrays.fill(result, 1); //each element is an increasing subsequence by itself of length 1
+        for(int i = 0; i < prev.length; i++)
         {
-            for(int j = 0; j < i; j++)
+            prev[i] = i; //initially each element is an increasing sub sequence by itself so prev is istelf
+        } 
+
+        for(int index = 1; index < nums.length; index++)
+        {
+            for(int prevIndex = 0; prevIndex < index; prevIndex++)
             {
-                //for every i from 1 to end, check for any j < i (0 < j < i) such that nums[j] < nums[i], such i,j is an increasing sub sequence
-                if(nums[i] > nums[j])
+                //check if nums[index] can be appended to nums[prevIndex]
+                if(nums[index] > nums[prevIndex])
                 {
-                    //(j, i) is an increasing sub sequence
-                    //thus length of increasing sub sequence from 0 to i is 1 + length of increasing sub sequence from 0 to j
-                    result[i] = Math.max(result[i], 1 + result[j]);
-                    max = Math.max(max, result[i]);
+                    //an increasing subsequence is found where last element is index and 2nd last element is prev
+                    //length of this is 1 + length of LIS where last element is prevIndex
+                    int currentLISLength = 1 + result[prevIndex];
+                    
+                    //update result if larger LIS is found
+                    if(result[index] < currentLISLength)
+                    {
+                        result[index] = currentLISLength; 
+                        prev[index] = prevIndex; //index is now reached from prevIndex
+                    }
                 }
             }
-        }
-        
-        return max;
-    }
-    
-    //time - O(n logn)
-    //space - O(n)
-    private int lisBinarySerach(int[] nums) {
-        int[] result = new int[nums.length];
-        result[0] = nums[0]; //initially the first element alone is an increasing sub sequence, store it in 1st cell of result[]
-        int index = 1; //index tracks the next vacant index in result[], the lis so far is the effective length of result[] = index
-        
-        for(int i = 1; i < nums.length; i++)
-        {
-            if(nums[i] > result[index - 1])
+
+            //update return val
+            if(lis < result[index])
             {
-                //i can be included at the end of current lis whose length is tracked by index
-                result[index] = nums[i];
-                index++;
+                lis = result[index];
+                lastIndex = index;
             }
+        }
+
+        System.out.println(printLIS(nums, prev, lastIndex));
+
+        return lis;
+    }
+
+    private String printLIS(int[] nums, int[] prev, int lastIndex)
+    {
+        StringBuilder result = new StringBuilder();
+
+        //as long as prev element of current element is not itself
+        while(prev[lastIndex] != lastIndex)
+        {
+            result.append(Integer.toString(nums[lastIndex])); //add current to result
+            result.append(",");
+            lastIndex = prev[lastIndex]; //point to prev of current
+        }
+
+        result.append(Integer.toString(nums[lastIndex])); //add first element
+        return result.reverse().toString();
+    }
+
+    //time - O(nlogn)
+    //space - O(n)
+    private int findLISUsingBinarySearch(int[] nums)
+    {
+        int[] result = new int[nums.length]; 
+        int index = -1; //pointer to track next valid index in result[]
+
+        for(int i = 0; i < nums.length; i++)
+        {
+            //if nums[i] can be appended to current increasing subsequence
+            if(index == -1 || result[index] < nums[i])
+            {
+                result[index + 1] = nums[i]; //place nums[i] in next valid index
+                index++; //index incremented by 1 to track current addition
+            }
+            //insert nums[i] in correct position in result[]
             else
             {
-                //the prob of find a longer increasing sub sequence with current nums[i] is higher
-                //so add this at appropriate pos in result[]
-                int replacementIndex = findClosest(result, 0, index - 1, nums[i]);
-                result[replacementIndex] = nums[i];
+                int correctIndex = findCorrectIndex(result, index, nums[i]); //if nums[i] is present in result, returns its index else returns the index of next largest element
+                result[correctIndex] = nums[i];
             }
         }
-        
-        return index;
+
+        //result[0, index] 
+        return index + 1;
     }
-    
-    //find target or number closest (next highest) to target
+
     //time - O(log n)
-    private int findClosest(int[] nums, int low, int high, int target) {
-        while(low <= high)
+    private int findCorrectIndex(int[] nums, int end, int target)
+    {
+        int start = 0;
+        //as long as valid elements exists
+        while(start <= end)
         {
-            int mid = low + (high - low) / 2;
+            int mid = start + (end - start) / 2; 
             if(nums[mid] == target)
             {
-                return mid;
+                return mid; //target found
             }
-            else if(nums[mid] > target)
+            else if(nums[mid] < target)
             {
-                high = mid - 1;
+                start = mid + 1; //shift to right half
             }
             else
             {
-                low = mid + 1;
+                end = mid - 1; //shift to left half
             }
         }
-        return low;
+
+        return start; //low tracks next largest element if target is absent
     }
 }
 
-//number of lis
 // 673.
-// time - O(n^2)
-// space - O(n)
-
 class Solution {
     public int findNumberOfLIS(int[] nums) {
-        //edge
-        if(nums == null || nums.length == 0)
+        return findCountOfLIS(nums);
+    }
+
+    //time - O(n^2)
+    //space - O(n)
+    private int findCountOfLIS(int[] nums)
+    {
+        int[] result = new int[nums.length]; //result[i] tracks length of lis with nums[i] as last element
+        int[] count = new int[nums.length]; //count[i] tracks number of increasing subsequences of length lis[i]
+
+        int lis = 1; //length of lis in nums[]
+
+        for(int index = 0; index < nums.length; index++)
         {
-            return 0;
-        }
-        
-        int[] lis = new int[nums.length]; //lis[i] = length of lis with nums[i] as last element 
-        int[] countLis = new int[nums.length]; //countLis[i] = number of lis with length = lis[i] and nums[i] as last element
-        
-        lis[0] = 1; //if only 0th element is present, list[0] = 1
-        countLis[0] = 1; //number of lis of length 1 with nums[0] as last element nums[0] = 1
-        
-        int lisLength = 1; //return val
-        
-        for(int i = 1; i < nums.length; i++)
-        {
-            lis[i] = 1; //initial values considering nums[i] as seperate subsequence on its own
-            countLis[i] = 1; 
-            for(int j = 0; j < i; j++)
+            //each element is an increasing subsequence by itself of length 1
+            result[index] = 1;
+            count[index] = 1;
+
+            //check if current can be appended with any previous element
+            for(int prev = 0; prev < index; prev++)
             {
-                if(nums[i] > nums[j])
+                //current can be appended
+                if(nums[index] > nums[prev])
                 {
-                    //nums[i] can attach to lis ending with nums[j]
-                    if(1 + lis[j] > lis[i])
+                    //append current with increasing subsequence ending at prev
+                    //length of this increasing subsequence is 1 + length(LIS with nums[prev] as last element)
+                    int currentLISLength = 1 + result[prev]; 
+
+                    //check if this larger than result[index]
+                    if(result[index] < currentLISLength)
                     {
-                        lis[i] = 1 + lis[j]; //update lis
-                        countLis[i] = countLis[j]; //number of lis ending with nums[i] is same as that ending with nums[j]
+                        //a larger increasing subsequence with nums[index] as last element is found
+                        result[index] = currentLISLength;
+                        //the number of subsequences with length as currentLISLength is same as number of subsequences with nums[prev] as last element (because count remains same as just an append happens)
+                        count[index] = count[prev];
                     }
-                    else if(1 + lis[j] == lis[i])
+
+                    //if length of current increasing subsequence is same as the length tracked in result
+                    //total number of subsequences of this length is count of subsequences with nums[prev] as last element + count[index] (current count)
+                    else if(result[index] == currentLISLength)
                     {
-                        //lis[i] stays same, but number of lis with last element as nums[i] becomes,
-                        //current value + number of lis with nums[j] as last element
-                        countLis[i] += countLis[j]; 
+                        count[index] += count[prev];
                     }
-                    lisLength = Math.max(lisLength, lis[i]);
+
+                    lis = Math.max(lis, result[index]); //update lis
                 }
             }
         }
-        
-        int result = 0; //return value
-        //find all countLis[i] with lis[i] = lisLength
-        for(int i = 0 ; i < nums.length; i++)
+
+        int totalCount = 0; //number of subsequences with length = lis
+        for(int i = 0; i < nums.length; i++)
         {
-            if(lis[i] == lisLength)
+            //if lis ends at nums[i]
+            if(result[i] == lis)
             {
-                result += countLis[i];
+               totalCount += count[i]; 
             }
         }
-        
-        return result;
+
+        return totalCount;
     }
 }
