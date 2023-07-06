@@ -1,85 +1,80 @@
 // 1048.
-//time - O(n* n * max length word in words list)
-//space - O(n)
 class Solution {
     public int longestStrChain(String[] words) {
-        //edge
-        if(words == null || words.length == 0)
-        {
-            return 0;
-        }
-        
-        //sorting is needed to consider the scenario where the smallest word is start of result chain
-        Arrays.sort(words, (String a, String b) -> a.length() - b.length());
-        
-        int[] longestStringChain = new int[words.length]; //ith index tracks longest string chain with words[i] as last word
-        longestStringChain[0] = 1; //1st word alone is a valid string chain
-        
-        int result = 1; //return value
-        
-        for(int i = 1; i < words.length; i++)
-        {
-            longestStringChain[i] = 1; //each word in itself is a valid chain
-            for(int j = 0; j < i; j++)
-            {
-                if(isValidExtension(words[j], words[i]) && longestStringChain[i] < 1 + longestStringChain[j])
-                {
-                    longestStringChain[i] = 1 + longestStringChain[j];
-                }
-                result = Math.max(result, longestStringChain[i]);
-            }
-        }
-        
-        return result;
+        Arrays.sort(words, (String x, String y) -> x.length() - y.length());
+        return findLongestStringChain(words);
     }
-    
-    //time - O(max(length of child and parent word))
-    private boolean isValidExtension(String parent, String child)
+
+    //consider current string chain {a, ba, bdca, bca}. It is same as {a, ba, bca, bdca} with length 4
+    //if current string chain sorted by length of strings, then checking if it can be expanded by a string is easier
+    //for eg if the string chain is {a, ba, bca} adding bdca is easier as we need to check only with last entry
+    //to work on sorted string chains, sort input array
+    //time - O(n^2 * avg length of each word)
+    //space - O(n)
+    private int findLongestStringChain(String[] words)
     {
-        //parent is shorter word and child is extended word
-        if(parent.length() + 1 != child.length())
+        //result[i] is length of longest string chain where words[i] is the last word
+        int[] result = new int[words.length];
+        Arrays.fill(result, 1); //each word is a string chain by itself of length 1
+
+        int length = 1; //return val
+
+        for(int index = 1; index < words.length; index++)
+        {
+            for(int prev = 0; prev < index; prev++)
+            {
+                //if words[index] can expand words[prev]
+                if(canExpand(words[prev], words[index]))
+                {
+                    int currentChainLength = 1 + result[prev];
+
+                    //if larger length found
+                    if(result[index] < currentChainLength)
+                    {
+                        result[index] = currentChainLength;
+                    }
+                }
+            }
+
+            length = Math.max(length, result[index]); //update result
+        }
+
+        return length;
+    }
+
+    private boolean canExpand(String prev, String current)
+    {
+        //current's length should exactly be 1 longer than prev
+        if(prev.length() + 1 != current.length())
         {
             return false;
         }
-        
-        int parentPointer = 0;
-        int childPointer = 0; //pointers for both strings
-        
-        while(childPointer < child.length())
+
+        int i = 0; //iterates over current
+        int j = 0; //iterates over previous
+
+        while(i < current.length())
         {
-            //test case b, ba
-            if(parentPointer == parent.length())
+            //char match, increment both
+            //1st part of if check accounts for ab, abc
+            if(j < prev.length() && current.charAt(i) == prev.charAt(j))
             {
-                //all chars in parent are covered
-                if(childPointer + 1 == child.length())
-                {
-                    //if only one char in child is remaining return true
-                    return true;
-                }
-                return false;
+                i++;
+                j++;
             }
-            
-            //as long as there are more letters in parent
-            if(parent.charAt(parentPointer) == child.charAt(childPointer))
-            {
-                parentPointer++;
-                childPointer++;
-            }
-            
-            //skip current letter in child and proceed
+            //could be the extra char, increment current pointer
             else
             {
-                childPointer++;
+                i++;
             }
         }
-        
-        //test case - a, ca
-        if(parentPointer == parent.length())
+
+        if(i == current.length() && j == prev.length())
         {
-            //all chars in parent are covered
+            //both pointers out of bound at same time
             return true;
         }
-        
+
         return false;
     }
 }
