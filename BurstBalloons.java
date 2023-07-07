@@ -90,6 +90,7 @@ class Solution {
                     int valueFromRight = (end == nums.length - 1) ? 1 : nums[end + 1];
                     int currentBurst = valueFromLeft * nums[index] * valueFromRight;
 
+                    //first part of ternary check handles case when range (i, j) becomes invalid by making i > j
                     int leftProblemResult = (index - 1 < start) ? 0 : result[start][index - 1];
                     int rightProblemResult = (index + 1 > end) ? 0 : result[index + 1][end];
 
