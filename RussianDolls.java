@@ -1,107 +1,99 @@
 // 354.
-
 class Solution {
     public int maxEnvelopes(int[][] envelopes) {
-        //edge
-        if(envelopes == null || envelopes.length == 0 || envelopes[0].length == 0)
-        {
-            return 0;
-        }
-        
-        //envelope[i] is of form [width, height]
-        //sort the envelopes in non decreasing order of either width or height - then find length of lis on the other parameter
-        //sorting on one parameter and lis on other ensures that envelopes can be placed inside each other
-        //after sorting lis works because, we know that the other parameter is already in increasing order
-        
-        //for binary search soln, arrange in decreasing order of heights in case of equal widths - this satisfies that lower height envelope is also considered while building result[]
-        Arrays.sort(envelopes, (int[] a, int[] b) ->  
-                    {
-                        if(a[0] == b[0])
-                        {
-                            return b[1] - a[1];
-                        }
-                        return a[0] - b[0];
-                     });
-        
-        //Arrays.sort(envelopes, (int[] a, int[] b) -> a[0] - b[0]); //custom sort works only for lis dp - check & remove equal widths in dp code
-        //return russianDollsDP(envelopes);
-        
-        int[] heights = new int[envelopes.length];
-        for(int i = 0; i < envelopes.length; i++)
-        {
-            heights[i] = envelopes[i][1];
-        }
-        
-        return russianDollsBinarySearch(heights);
+        Arrays.sort(envelopes, (int[] x, int[] y) -> x[0] == y[0] ? y[1] - x[1] : x[0] - y[0]); 
+        return findLongestStackBinarySearch(envelopes);
     }
-    
+
+    //consider a stack of 3 envelopes of dimensions (a,b) within (c,d) within (e,f)
+    //for a new envelope with dimensions (x,y) to fit into this stack, it can either fit inside (a,b) or between (a,b) and (c,d) or between (c,d) and (e,f) or it can cover the existing 3 envelopes 
+    //if the enevelopes are sorted in dimensions, then the new enevelope can only cover the existing envelopes
+    //so the envelopes are sorted by either height or width
+    //   2  4  6  6 -> sorted in increasing order of widths
+    //   1  2  1  3 -> find lis in height
+    //russian doll length is 3  
+    //   2  4  6  6 -> sorted in increasing order of widths
+    //   1  2  3  4 -> find lis in height but 4th can't cover 3rd, so check width as well
+    //russian doll length is 3  
     //time - O(n^2)
     //space - O(n)
-    //lis with dp
-    private int russianDollsDP(int[][] envelopes) {
+    private int findLongestStack(int[][] envelopes)
+    {
+        //result[i] tracks length of largest stack with envelopes[i] as the outermost envelope
         int[] result = new int[envelopes.length];
-        Arrays.fill(result, 1); //every element is an increasing sub sequence of length 1
-        int max = 1;
-        
-        for(int i = 1; i < envelopes.length; i++)
+        Arrays.fill(result, 1); //each enevelop is a russian doll by itself of length 1
+
+        int length = 1; //return val
+
+        for(int index = 1; index < envelopes.length; index++)
         {
-            for(int j = 0; j < i; j++)
+            for(int prev = 0; prev < index; prev++)
             {
-                //current envelope is larger than jth envelope in both height and width
-                if(envelopes[i][1] > envelopes[j][1] && envelopes[i][0] > envelopes[j][0])
+                //see if index can cover the russian doll ending at prev
+                if(envelopes[index][1] > envelopes[prev][1] && envelopes[index][0] > envelopes[prev][0])
                 {
-                    result[i] = Math.max(result[i], 1 + result[j]);
-                    max = Math.max(max, result[i]);
+                    int currentLength = 1 + result[prev]; //add current to prev
+                    result[index] = Math.max(result[index], currentLength);
                 }
             }
+
+            length = Math.max(length, result[index]);
         }
-        
-        return max;
+
+        return length;
     }
-    
-    //time - O(n logn)
+
+    //time - O(nlogn)
     //space - O(n)
-    //lis using binary serach
-    private int russianDollsBinarySearch(int[] heights) {
-        int[] result = new int[heights.length];
-        result[0] = heights[0];
-        int index = 1;
-        
-        for(int i = 1; i < heights.length; i++)
+    private int findLongestStackBinarySearch(int[][] envelopes)
+    {
+        int[] result = new int[envelopes.length]; 
+        result[0] = envelopes[0][1]; //initially the 0th envelope is a russian doll by itself
+        int index = 1; //tracks the next vacant index
+
+        for(int i = 1; i < envelopes.length; i++)
         {
-            if(heights[i] > result[index - 1])
+            //check if i can extend the last element of result[]
+            if(envelopes[i][1] > result[index - 1])
             {
-                result[index++] = heights[i];
+                result[index] = envelopes[i][1];
+                index++; 
             }
             else
             {
-                int replacementIndex = findClosest(result, 0, index - 1, heights[i]);
-                result[replacementIndex] = heights[i];
+                int correctIndex = findCorrectIndex(result, index - 1, envelopes[i][1]);
+                result[correctIndex] = envelopes[i][1];
             }
         }
-        
+
         return index;
     }
-    
-    //find target or number closest (next highest) to target
+
+    //returns the index at which target is present in nums[0, high]
+    //if target is absent, it returns the index of next highest number
     //time - O(log n)
-    private int findClosest(int[] nums, int low, int high, int target) {
+    private int findCorrectIndex(int[] nums, int high, int target)
+    {
+        int low = 0;
+
+        //as long as more lements are presnt
         while(low <= high)
         {
-            int mid = low + (high - low) / 2;
+            int mid = low + (high - low) / 2; 
             if(nums[mid] == target)
             {
-                return mid;
+                return mid; //target found
             }
-            else if(nums[mid] > target)
+            else if(nums[mid] < target)
             {
-                high = mid - 1;
+                low = mid + 1; //shift to right half
             }
             else
             {
-                low = mid + 1;
+                high = mid - 1; //shift to left half
             }
         }
-        return low;
+
+        return low; //tracks index of next largest number
     }
 }
