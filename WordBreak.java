@@ -1,67 +1,65 @@
 // 139.
-// problem - check if s can be made from the words in dict with possible reuse of same words
 class Solution {
     public boolean wordBreak(String s, List<String> wordDict) {
-        HashSet<String> dict = new HashSet<>(wordDict); //set allows fast lookup
-        //return helper(s, dict);
-        return validPartition(s, dict);
+        HashSet<String> dict = new HashSet<>(wordDict);
+        //return isPossible(s, 0, dict, new Boolean[s.length()]);
+        return isPossible(s, dict);
     }
-    
-    //time - O(n^n)
-    //space - O(n) for the call stack
-    private boolean helper(String s, HashSet<String> dict) {
+
+    //isPossible(i) tracks if it is possible to break s[i, end of string] into substrings such that each substring is present in the dict
+    //space without memoization - O(n) worst case string broken into chars of length 1
+    //time with memoization - O(n^2) - n states, n time for each state
+    //space with memoization - O(n) for cache and O(n) for call stack
+    private boolean isPossible(String s, int start, HashSet<String> dict, Boolean[] cache)
+    {
         //base
-        if(s.length() == 0)
+        if(start == s.length())
         {
-            return true; //cursor percolates down to empty string - hits base and returns true
+            return true; //empty string - whole string exhausted
         }
-        //logic
-        for(int i = 1; i <= s.length(); i++)
+
+        //check cache
+        if(cache[start] != null)
         {
-            String snippet = s.substring(0, i);
-            String remaining = s.substring(i);
-            //process the branch only if the snippet is in the dict
-            if(dict.contains(snippet) && helper(remaining, dict))
+            return cache[start];
+        }
+
+        for(int index = start; index < s.length(); index++)
+        {
+            String current = s.substring(start, index + 1); //2nd argument is exclusive so +1
+            //if current is present and recurively find if the remaining string is presnt in dict
+            if(dict.contains(current) && isPossible(s, index + 1, dict, cache))
             {
+                cache[start] = true; 
                 return true;
             }
         }
-        return false;
+
+        cache[start] = false;
+        return false; //all possible cominations tried
     }
-    
+
     //time - O(n^2)
     //space - O(n)
-    private boolean validPartition(String s, HashSet<String> dict) {
+    private boolean isPossible(String s, HashSet<String> dict)
+    {
+        //result[i] tracks if s[i, end of string] is valid
         boolean[] result = new boolean[s.length() + 1];
-        result[0] = true; //'' is part of dict
-        for(int i = 1; i < result.length; i++)
+        result[s.length()] = true; //base case in recursion
+
+        for(int start = s.length() - 1; start >= 0; start--)
         {
-            for(int j = 0; j < i; j++)
+            for(int index = start; index < s.length(); index++)
             {
-                String snippet = s.substring(j, i); 
-                if(result[j] && dict.contains(snippet)) 
+                String current = s.substring(start, index + 1); //2nd argument is exclusive so +1
+                //if current is present and recurively find if the remaining string is presnt in dict
+                if(dict.contains(current) && result[index + 1])
                 {
-                    //result[j] = true implies that the substring s[0,j] ccan be formed from words in dict
-                    //current snippet must be in dict
-                    //so thw whole substring from s[0,i] is valid and thus made true
-                    result[i] = true;
+                    result[start] = true; 
                 }
             }
         }
-        return result[result.length - 1];
+
+        return result[0];
     }
 }
-
-
-// call stack
-// s = "code"  dict = [c, od, e, x]
-//                                             wb(code)
-//                                                 |
-//                  c && wb(ode)    co && wb(de)   cod && wb(e)   code && wb()   co, cod, code are not in dict
-//             (True)   |            (False)         (False)        (False)        so dont expand those branches
-//                      |           
-//         o && wb(de)  od && wb(e)   ode && wb()   
-//       (False)        (True)  |      (False)
-//                              |
-//                        e && wb()    e is there in dict and base is hit so return true
-//                      (True)  (True)
