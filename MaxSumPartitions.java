@@ -1,77 +1,83 @@
 // 1043.
 class Solution {
     public int maxSumAfterPartitioning(int[] arr, int k) {
-        //return findOptimalPartition(arr, k, 0, new Integer[arr.length]);
-        return findMaxSum(arr, k);
+        //return findBestPartition(arr, 0, k, new Integer[arr.length]);
+        return findBestPartition(arr, k);
     }
-    
-    //time - O(n^2) -> n possible states and for llop runs for n time for each state
-    //space - O(2n) cache + call stack size
-    private int findOptimalPartition(int[] nums, int k, int index, Integer[] cache) {
+
+    //findBestPartition(i) partitions nums[i, nums.length - 1] to get max sum
+    //space - O(n) - each partition is of size 1 - max call stack size
+    //time with memoization - O(n^2) - n states and n time for each state
+    //space with memoization - O(n) for cache + call stack of O(n)
+    private int findBestPartition(int[] nums, int start, int k, Integer[] cache)
+    {
         //base
-        if(index == nums.length)
+        if(start == nums.length)
         {
-            return 0;
+            return 0; //no more partitions possible
         }
+
         //check cache
-        if(cache[index] != null)
+        if(cache[start] != null)
         {
-            return cache[index];
+            return cache[start];
         }
-        
-        //logic
-        int result = Integer.MIN_VALUE; //maximize result for nums starting from index
-        //if k = 3, (index), (index, index + 1), (index, index + 1, index + 2) are 3 possible partitions
-        //for each partition, find max element
-        int maxInCurrentPartition = Integer.MIN_VALUE;
-        for(int i = index; i < Math.min(nums.length, index + k); i++)
+
+        int maxSum = Integer.MIN_VALUE; //return value - return max sum
+        int largestInCurrentSubArray = Integer.MIN_VALUE; //tracks largest element in current subarray
+        //if k = 3, possible partitions are 
+        //start alone
+        //start, start + 1
+        //start, start + 1, start + 2
+        for(int index = start; index < start + k; index++)
         {
-            //partition = (index - i)
-            maxInCurrentPartition = Math.max(maxInCurrentPartition, nums[i]); //update max element
-            int currentPartitionSize = i - index + 1; //find size of current partiton
-            //recurse
-            int currentPartiton = (maxInCurrentPartition * currentPartitionSize) + findOptimalPartition(nums, k, i + 1, cache);
-            result = Math.max(result, currentPartiton);
-        }
-        
-        cache[index] = result;
-        return result;
-    }
-    
-    // time - O(n)
-    // space - O(n)
-    private int findMaxSum(int[] nums, int k) {
-        int[] result = new int[nums.length];
-        
-        for(int i = 0; i < nums.length; i++)
-        {
-            //if k = 3, (i), (i, i - 1), (i, i- 1, i- 2) are 3 partitons
-            int maxElement = Integer.MIN_VALUE;
-            for(int j = i; j > i - k; j--)
+            if(index >= nums.length)
             {
-                if(j < 0)
+                continue; //invalid partition
+            }
+
+            //update if larger element found
+            largestInCurrentSubArray = Math.max(largestInCurrentSubArray, nums[index]); 
+            int length = index - start + 1; //length of current subarray
+            //current sum is length * largest element as largest element is replaced in all indices of current subarray plus recursively find sum of remaining array
+            int sum = (largestInCurrentSubArray * length) + findBestPartition(nums, index + 1, k, cache);
+
+            maxSum = Math.max(maxSum, sum); //update max sum
+        }
+
+        cache[start] = maxSum; //update cache
+        return maxSum;
+    }
+
+    //time - O(n^2)
+    //space - O(n)
+    private int findBestPartition(int[] nums, int k)
+    {
+        //result[i] is max sum possible if nums[i, nums.length - 1] is partitioned in best way
+        int[] result = new int[nums.length + 1];
+        Arrays.fill(result, Integer.MIN_VALUE); //maximize result
+        result[nums.length] = 0; //base case - 0 value if array is empty
+
+        for(int start = nums.length - 1; start >= 0; start--)
+        {
+            int largestInCurrentSubArray = Integer.MIN_VALUE; //tracks largest element in current subarray
+            for(int index = start; index < start + k; index++)
+            {
+                if(index >= nums.length)
                 {
-                    //invalid partiton
-                    continue;
+                    continue; //invalid partition
                 }
-                
-                //current partiton (j - i)
-                maxElement = Math.max(maxElement, nums[j]);
-                int currentPartSize = (i - j + 1); //end - start + 1
-                //prev exisits
-                if(j - 1 >= 0)
-                {
-                    result[i] = Math.max(result[i],
-                                    (maxElement * currentPartSize) + result[j - 1]);
-                }
-                //prev doesn't esisits
-                else
-                {
-                    result[i] = Math.max(result[i], maxElement * currentPartSize);
-                }
+
+                //update if larger element found
+                largestInCurrentSubArray = Math.max(largestInCurrentSubArray, nums[index]); 
+                int length = index - start + 1; //length of current subarray
+                //current sum is length * largest element as largest element is replaced in all indices of current subarray plus recursively find sum of remaining array
+                int sum = (largestInCurrentSubArray * length) + result[index + 1];
+
+                result[start] = Math.max(result[start], sum); //update max sum
             }
         }
-        
-        return result[nums.length - 1];
+
+        return result[0];
     }
 }
