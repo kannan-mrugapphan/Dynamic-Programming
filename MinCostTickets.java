@@ -1,38 +1,95 @@
 // 983.
-// time - O(max(max day in days[], length of days[])) //max time among populating hashset and result - days can have max of 366 days - so can be considered constant
-// space - O(max(max day in days[], length of days[])) //for result[] - days can have max of 366 days - so can be considered constant
 class Solution {
     public int mincostTickets(int[] days, int[] costs) {
-        //hashset for a faster look up to check whether we travel on a particular day
-        int max = Integer.MIN_VALUE; //denotes the largest day in a year [1, 365] on which travel occurs
-        HashSet<Integer> travelDays = new HashSet<>(); 
-        for(int day : days)
+        //return findMinCost(days, days.length - 1, costs, new Integer[days.length]);
+        return findMinCost(days, costs);
+    }
+
+    //assumption - days will be sorted
+    //f(i) tracks min cost to travel on days[0, i]
+    //time - O(3^n), space - O(n)
+    //time with memoization - O(n), space with memoization - O(n) for cache and O(n) for call stack
+    private int findMinCost(int[] days, int index, int[] costs, Integer[] cache)
+    {
+        //base
+        if(index < 0)
         {
-            travelDays.add(day);
-            max = Math.max(max, day);
+            return 0; //all days covered
         }
-        int[] result = new int[max + 1];
-        result[0] = 0; //cost to travel on 0th day is 0
-        for(int i = 1; i < result.length; i++)
+
+        //check cache
+        if(cache[index] != null)
         {
-            if(travelDays.contains(i)) // travel occurs on day i
-            {
-                //if the prev day or the 7th prev day or the 30th prev day is out of bounds, 
-                //buy a new ticket at day i which has min cost - so the corresponding index to look from result[] is 0 
-                int daily = Math.max(0, i - 1); 
-                int weekly = Math.max(0, i - 7);
-                int monthly = Math.max(0, i - 30);
-                
-                int dailyPass = costs[0] + result[daily]; //try extending from prev day
-                int weeklyPass = costs[1] + result[weekly]; //try extending from 7th day
-                int monthlyPass = costs[2] + result[monthly]; //try extending from 30th day
-                result[i] = Math.min(dailyPass, Math.min(weeklyPass, monthlyPass)); //result - min among 3 choices
-            }
-            else //not travelling on i - sso cost remains same as previous day
-            {
-                result[i] = result[i - 1];
-            }
+            return cache[index];
         }
-        return result[max]; //return cost till the max day in days[]
+
+        int oneDayPassCost = costs[0];
+        //if one day pass is purchased, earliest day travel is possible is the same day
+        oneDayPassCost += findMinCost(days, index - 1, costs, cache); //recurse on the remaining days
+
+        int sevenDayPassCost = costs[1];
+        //if 7 day pass is purchased on day, then travel is possible on day, day-1, day-2, ..., day-6
+        int minimumDayCovered = days[index] - 6;
+        int nextIndex = index;
+        while(nextIndex >= 0 && days[nextIndex] >= minimumDayCovered)
+        {
+            nextIndex--;
+        }
+        sevenDayPassCost += findMinCost(days, nextIndex, costs, cache); //the next day gets updated
+
+        int thirtyDayPassCost = costs[2];
+        //if 30 day pass is purchased on day, then travel is possible on day, day-1, day-2, ..., day-29
+        minimumDayCovered = days[index] - 29;
+        nextIndex = index;
+        while(nextIndex >= 0 && days[nextIndex] >= minimumDayCovered)
+        {
+            nextIndex--;
+        }
+        thirtyDayPassCost += findMinCost(days, nextIndex, costs, cache); //the next day gets updated
+
+
+        int result = Math.min(oneDayPassCost, Math.min(sevenDayPassCost, thirtyDayPassCost));
+        cache[index] = result; //update cache
+        return result;
+    }
+
+    //time - O(n)
+    //space - O(n)
+    private int findMinCost(int[] days, int[] costs)
+    {
+        //result[i] tracks min cost needed to travel on days[0, i]
+        int[] result = new int[days.length + 1];
+        result[0] = 0; //days is empty, no cost needed, base case
+
+        for(int index = 1; index <= days.length; index++)
+        {
+            int oneDayPassCost = costs[0];
+            //if one day pass is purchased, earliest day travel is possible is the same day
+            oneDayPassCost += result[index - 1]; //recurse on the remaining days
+
+            int sevenDayPassCost = costs[1];
+            //if 7 day pass is purchased on day, then travel is possible on day, day-1, day-2, ..., day-6
+            int minimumDayCovered = days[index - 1] - 6;
+            int nextIndex = index;
+            while(nextIndex > 0 && days[nextIndex - 1] >= minimumDayCovered)
+            {
+                nextIndex--;
+            }
+            sevenDayPassCost += result[nextIndex]; //the next day gets updated
+
+            int thirtyDayPassCost = costs[2];
+            //if 30 day pass is purchased on day, then travel is possible on day, day-1, day-2, ..., day-29
+            minimumDayCovered = days[index - 1] - 29;
+            nextIndex = index;
+            while(nextIndex > 0 && days[nextIndex - 1] >= minimumDayCovered)
+            {
+                nextIndex--;
+            }
+            thirtyDayPassCost += result[nextIndex]; //the next day gets updated
+
+            result[index] = Math.min(oneDayPassCost, Math.min(sevenDayPassCost, thirtyDayPassCost));
+        }
+
+        return result[days.length];
     }
 }
