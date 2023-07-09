@@ -1,80 +1,115 @@
 // 413.
 class Solution {
-    public int numberOfArithmeticSlices(int[] A) {
+    public int numberOfArithmeticSlices(int[] nums) {
         //edge
-        if(A == null || A.length == 0)
+        if(nums == null || nums.length < 3)
         {
             return 0;
         }
         
-        return optimalDP(A);
+        return countArithmeticSlicesSPaceOptimized(nums);
     }
-    
+
     //time - O(n^2)
-    //space - O(1)
-    private int nestedOperations(int[] A) {
-        int count = 0;
-        for(int i = 0; i < A.length - 2; i++) //no need to consider last 2 elements as an AP has atleast 3 elements
+    //space - constant
+    private int countArithmeticSlices(int[] nums)
+    {
+        int count = 0; //return value
+        //starting from each index i in nums[] count the number of APs that start at ith index
+        //AP has atleast 3 elements, so valid start positions are [0, nums.length - 3]
+        for(int start = 0; start <= nums.length - 3; start++)
         {
-            int initialDiff = A[i + 1] - A[i];  //x2 - x1 is calculated initially
-            for(int j = i + 1; j < A.length - 1; j++)
+            //check if start index has a valid AP
+            if(nums[start + 2] - nums[start + 1] == nums[start + 1] - nums[start])
             {
-                //check if x3 - x2 = x2 - x1 -> if so x1,x2,x3 is an AP and increase count by 1
-                //else break out of inner for() so the outer for starts from next i
-                if(initialDiff == A[j + 1] - A[j])
+                //common diff of 1st elements are same, so start index has a valid AP
+                int commonDiff = nums[start + 1] - nums[start];
+                count++; //to account for (start, start + 1, start + 2)
+                //try to expand current AP as long as possible
+                //from start + 3 till end 
+                for(int end = start + 3; end < nums.length; end++)
                 {
-                    count++;
-                }
-                else
-                {
-                    break;
+                    //AP at start still holds
+                    if(nums[end] - nums[end - 1] == commonDiff)
+                    {
+                        count++; //acount for [start, start + 1, start + 2, ... end]
+                        //the child AP starting at start + 1 will be counted in next iteration of start
+                    }
+                    //AP starting at start doesn't hold anymore, continue to next start
+                    else
+                    {
+                        break;
+                    }
                 }
             }
         }
+
         return count;
     }
-    
+
     //time - O(n)
     //space - O(n)
-    private int memoization(int[] A) {
-        int[] result = new int[A.length];
-        result[A.length - 1] = 0; //the last 2 elements cant form an AP so set to zero
-        result[A.length - 1] = 0;
-        //at the end, add all elements of result[]
-        int count = 0;
-        for(int i = result.length - 3; i >= 0; i--)
+    private int countArithmeticSlicesUsingCaching(int[] nums)
+    {
+        //in the previous approach, APs starting at each start are counted
+        //eg: [1,2,3,4,5]
+        //[1,2,3], [1,2,3,4], [1,2,3,4,5] are counted in first iteration
+        //[2,3,4], [2,3,4,5] are counted in 2nd iteration
+        //[3,4,5] are counted in last iteration
+        //when AP starting at 2 is calculated, [2,3,4] is valid, so this AP is expanded as much as possible
+        //since [2,3,4] is valid AP, count of APs starting at 2 is 1 + count of APs starting at 3
+
+        //result[i] is count of APs starting at ith index
+        int[] result = new int[nums.length];
+        //valid AP needs atleast 3 elements so valid start positions are [0, nums.length - 3]
+        result[nums.length - 1] = 0;
+        result[nums.length - 2] = 0;
+
+        int count = 0; //return val
+
+        for(int start = nums.length - 3; start >= 0; start--)
         {
-            if(A[i + 1] - A[i] == A[i + 2] - A[i + 1])
+            //check if start index has a valid AP
+            if(nums[start + 2] - nums[start + 1] == nums[start + 1] - nums[start])
             {
-                result[i] = 1 + result[i + 1]; //A[i],A[i+1],A[i+2] is an AP, so add 1 to result[i+1] to result[i]
-                count += result[i]; 
+                result[start] = 1 + result[start + 1]; //count updated
             }
             else
             {
-                result[i] = 0;
+                //start is invalid
+                result[start] = 0;
             }
+
+            count += result[start]; //add APs starting from start to result
         }
+
         return count;
     }
-    
+
     //time - O(n)
-    //space - O(1)
-    private int optimalDP(int[] A) {
-        //in tabulation sol, only the next cell val is neede, right tracks it
-        int count = 0;
-        int right = 0; //result[A.length - 2] = 0 so right start from 2
-        for(int i = A.length - 3; i >= 0; i--)
+    //space - constant
+    private int countArithmeticSlicesSPaceOptimized(int[] nums)
+    {
+        int count = 0; //return val
+        int countOfAPsStartingAtNextIndex = 0; //tracks count of APs starting at i+1 for each index i
+
+        for(int start = nums.length - 3; start >= 0; start--)
         {
-            if(A[i + 1] - A[i] == A[i + 2] - A[i + 1])
+            int current = 0; //tracks count of APs starting at start
+            //check if start index has a valid AP
+            if(nums[start + 2] - nums[start + 1] == nums[start + 1] - nums[start])
             {
-                right = 1 + right; //result[i] = 1 + right and result[i] is right for next iteration
-                count += right; //add right to count at each step
+                current = 1 + countOfAPsStartingAtNextIndex; //count updated
             }
             else
             {
-                right = 0; 
+                current = 0; //start is invalid start position
             }
+            
+            count += current; //add APs starting from start to result
+            countOfAPsStartingAtNextIndex = current; //for next iteration, current becomes next
         }
+
         return count;
     }
 }
